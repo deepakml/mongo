@@ -1,5 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const ObjectID = require('mongodb').ObjectID;
 
 var {mongoose} = require("./db/db.js");
 var {todo} = require("./models/todo.js");
@@ -45,6 +46,23 @@ app.get("/todos/:id", (req, res) => {
       res.status(404).send("Not a valid ID")
   }).catch( (e) => {
     res.send("Not a valid ID");
+  })
+})
+
+app.delete("/delete_todo/:id", (req, res) => {
+  var id = req.params.id;
+  if(!ObjectID.isValid(id)) {
+    console.log("Not a valid id");
+    res.status(404).send()
+    return;
+  }
+  todo.findByIdAndRemove(id).then( (doc) => {
+    if(!doc) {
+      return res.status(404).send()
+    }
+    res.send({doc})
+  }).catch( (e) => {
+    res.status(404).send()
   })
 })
 

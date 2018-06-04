@@ -18,7 +18,7 @@ MongoClient.connect("mongodb://localhost:27017/ToDoApp", { useNewUrlParser: true
     if(err) {
       return console.log("Error in inserting data")
     }
-
+    
     console.log("Data inserted successfully");
 
     console.log(JSON.stringify(result.ops, undefined, 2));
