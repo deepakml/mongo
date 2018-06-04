@@ -3,10 +3,13 @@ const bodyParser = require("body-parser");
 const ObjectID = require('mongodb').ObjectID;
 const _ = require("lodash");
 const validator = require("validator");
+const jwt = require("jsonwebtoken");
+
 
 var {mongoose} = require("./db/db.js");
 var {todo} = require("./models/todo.js");
 var {user} = require("./models/user.js");
+var {authenticate} = require("./middleware/authenticate.js");
 
 var app = new express();
 
@@ -116,6 +119,13 @@ app.post("/user/register", (req, res) => {
     res.send(e)
   })
 
+})
+
+
+
+
+app.get("/user/me", authenticate, (req, res) => {
+  res.send(req.user);
 })
 
 
