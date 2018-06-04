@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ObjectID = require('mongodb').ObjectID;
 const _ = require("lodash");
+const validator = require("validator");
 
 var {mongoose} = require("./db/db.js");
 var {todo} = require("./models/todo.js");
@@ -91,8 +92,32 @@ app.patch("/todo/:id", (req, res) => {
   }).catch( (e) => {
     res.status(404).send()
   })
-  
 })
+
+
+app.post("/user/register", (req, res) => {
+  var body = _.pick(req.body, ["email", "password"]);
+
+  if(! ( _.has(body, 'email') && validator.isEmail(body.email ) ) ) {
+    return res.send({error: "Email field is required."})
+  }
+
+  if(! ( _.has(body, 'password') && body.password.length >= 8 ) )  {
+    return res.send({error: "Password field is required and must be atleast 8 characters in length"})
+  }
+
+  var usr = new user(body)
+
+  usr.save().then( () => {
+    return usr.generateAuthToken();
+  }).then( (token) => {
+    res.header('x-auth', token).send(usr)
+  }).catch( (e) => {
+    res.send(e)
+  })
+
+})
+
 
 
 app.listen(3000, () => {
