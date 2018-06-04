@@ -32,6 +32,22 @@ app.get("/todos", (req, res) => {
   })
 })
 
+app.get("/todos/:id", (req, res) => {
+  var id = req.params.id;
+  todo.findById(id).then( (doc) => {
+    if(!doc) {
+      res.send("Invalid ID")
+      return console.log("Invalid id");
+    }
+    res.send(doc)
+    },
+    (e) => {
+      res.status(404).send("Not a valid ID")
+  }).catch( (e) => {
+    res.send("Not a valid ID");
+  })
+})
+
 
 app.listen(3000, () => {
   console.log("Listening to port 3000")
