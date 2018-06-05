@@ -1,6 +1,7 @@
 var mongoose = require("mongoose");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
+const bcryptjs = require("bcryptjs");
 
 
 var userSchema = new mongoose.Schema({
@@ -64,7 +65,47 @@ userSchema.statics.getUserByToken = function (token) {
   }
 }
 
+userSchema.statics.getUserByEmailPassword = function (email, password) {
+  var user = this;
+  return user.findOne({
+      "email" : email,
+    }).then( (res) => {
+      if(!res) {
+          return  Promise.reject("Invalid email");
+      }
+      return bcryptjs.compare(password, res.password).then( (doc) => {
+        if(!doc) {
+          return  Promise.reject("Invalid password");
+        }
+        return Promise.resolve(res);
+      })
+  }).catch( (e) => {
+    return  Promise.reject(e);
+  })
 
+}
+
+userSchema.pre("save", function(next) {
+  var user = this;
+
+  if (this.isModified("password")) {
+    bcryptjs.genSalt(10, (err, salt) => {
+      if(err) {
+        return Promise.reject("Unable to salt")
+      }
+      bcryptjs.hash(user.password, salt, (err, hash) => {
+        if(err) {
+          return Promise.reject("Unable to hash");
+        }
+        user.password = hash;
+        next();
+      })
+    })
+  }
+  else {
+    next();
+  }
+})
 
 var user = mongoose.model("Users",  userSchema);
 

@@ -121,7 +121,17 @@ app.post("/user/register", (req, res) => {
 
 })
 
+app.post("/user/login", (req, res) => {
+  var body = _.pick(req.body, ["email", "password"]);
+  user.getUserByEmailPassword(body.email, body.password).then( (result) => {
+    return result.generateAuthToken().then( (token) => {
+        res.header('x-auth', token).send("Logged in successfully!");
+    });
+  }).catch( (e) => {
+    return res.send(e);
+  });
 
+})
 
 
 app.get("/user/me", authenticate, (req, res) => {
