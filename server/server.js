@@ -133,9 +133,17 @@ app.post("/user/login", (req, res) => {
 
 })
 
-
 app.get("/user/me", authenticate, (req, res) => {
   res.send(req.user);
+})
+
+app.get("/user/logout", authenticate, (req, res) => {
+  var usr = req.user;
+  usr.removeToken(req.token).then( (val) => {
+    res.status(200).send();
+  }).catch( (e) => {
+    res.status(404).send();
+  })
 })
 
 
