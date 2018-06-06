@@ -39,7 +39,7 @@ userSchema.methods.generateAuthToken = function () {
   var user = this;
 
   var access = "auth";
-  var token = jwt.sign({_id: user._id.toString()}, "mySecret123");
+  var token = jwt.sign({_id: user._id.toString()}, process.env.JWT_SECRET);
 
   user.tokens.push({access, token})
   return user.save().then( () => {
@@ -62,7 +62,7 @@ userSchema.methods.removeToken = function (token) {
 userSchema.statics.getUserByToken = function (token) {
   var user = this;
   try {
-    decoded = jwt.verify(token, 'mySecret123');
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
     return user.findOne({
       "tokens.token" : token,
       "tokens.access" : "auth"
