@@ -15,10 +15,11 @@ var app = new express();
 
 app.use(bodyParser.json());
 
-app.post("/todos", (req, res) => {
+app.post("/todos", authenticate, (req, res) => {
 
   var tds = new todo( {
     text: req.body.text,
+    _creator: req.user._id
   } )
 
   tds.save().then( (doc) => {
@@ -29,74 +30,6 @@ app.post("/todos", (req, res) => {
     console.log(err)
   })
 })
-
-app.get("/todos", (req, res) => {
-  todo.find().then( (docs) => {
-    res.send({docs})
-  }, (e) => {
-    res.send(e)
-  })
-})
-
-app.get("/todos/:id", (req, res) => {
-  var id = req.params.id;
-  todo.findById(id).then( (doc) => {
-    if(!doc) {
-      res.send("Invalid ID")
-      return console.log("Invalid id");
-    }
-    res.send(doc)
-    },
-    (e) => {
-      res.status(404).send("Not a valid ID")
-  }).catch( (e) => {
-    res.send("Not a valid ID");
-  })
-})
-
-app.delete("/delete_todo/:id", (req, res) => {
-  var id = req.params.id;
-  if(!ObjectID.isValid(id)) {
-    console.log("Not a valid id");
-    res.status(404).send()
-    return;
-  }
-  todo.findByIdAndRemove(id).then( (doc) => {
-    if(!doc) {
-      return res.status(404).send()
-    }
-    res.send({doc})
-  }).catch( (e) => {
-    res.status(404).send()
-  })
-})
-
-app.patch("/todo/:id", (req, res) => {
-  var id = req.params.id;
-  if(!ObjectID.isValid(id)) {
-    return res.status(404).send()
-  }
-
-  var body = _.pick(req.body, ["text", "completed"]);
-
-  if(_.isBoolean(body.completed) && body.completed) {
-    body.completedAt = new Date().getTime();
-  }
-  else {
-    body.completed = false;
-    body.completedAt = null;
-  }
-
-  todo.findByIdAndUpdate(id,{$set: body}, {new:true}).then( (doc) => {
-    if(!doc) {
-      return res.status(404).send()
-    }
-    res.send({doc})
-  }).catch( (e) => {
-    res.status(404).send()
-  })
-})
-
 
 app.post("/user/register", (req, res) => {
   var body = _.pick(req.body, ["email", "password"]);
@@ -133,6 +66,37 @@ app.post("/user/login", (req, res) => {
 
 })
 
+app.get("/todos", authenticate, (req, res) => {
+  todo.find({
+    _creator: req.user._id
+  }).then( (docs) => {
+    res.send({docs})
+  }, (e) => {
+    res.send(e)
+  })
+})
+
+app.get("/todos/:id", authenticate, (req, res) => {
+  var id = req.params.id;
+  console.log(req.user._id);
+  console.log(id);
+  todo.findOne({
+    _id: id,
+    _creator: req.user._id
+  }).then( (doc) => {
+    if(!doc) {
+      res.send("Invalid ID")
+      return console.log("Invalid id");
+    }
+    res.send(doc)
+    },
+    (e) => {
+      res.status(404).send("Not a valid ID")
+  }).catch( (e) => {
+    res.send("Not a valid ID");
+  })
+})
+
 app.get("/user/me", authenticate, (req, res) => {
   res.send(req.user);
 })
@@ -146,7 +110,54 @@ app.get("/user/logout", authenticate, (req, res) => {
   })
 })
 
+app.delete("/delete_todo/:id", authenticate, (req, res) => {
+  var id = req.params.id;
+  if(!ObjectID.isValid(id)) {
+    console.log("Not a valid id");
+    res.status(404).send()
+    return;
+  }
+  todo.findOneAndRemove({
+    _id: id,
+    _creator: req.user._id
+  }).then( (doc) => {
+    if(!doc) {
+      return res.status(404).send()
+    }
+    res.send({doc})
+  }).catch( (e) => {
+    res.status(404).send()
+  })
+})
 
+app.patch("/todo/:id", authenticate, (req, res) => {
+  var id = req.params.id;
+  if(!ObjectID.isValid(id)) {
+    Promise.reject("Not a valid id");
+  }
+
+  var body = _.pick(req.body, ["text", "completed"]);
+
+  if(_.isBoolean(body.completed) && body.completed) {
+    body.completedAt = new Date().getTime();
+  }
+  else {
+    body.completed = false;
+    body.completedAt = null;
+  }
+
+  todo.findOneAndUpdate({
+    _id : id,
+    _creator: req.user._id,
+  },{$set: body}, {new:true}).then( (doc) => {
+    if(!doc) {
+      return Promise.reject();
+    }
+    res.send({doc})
+  }).catch( (e) => {
+    res.status(404).send(e)
+  })
+})
 
 app.listen(3000, () => {
   console.log("Listening to port 3000")
